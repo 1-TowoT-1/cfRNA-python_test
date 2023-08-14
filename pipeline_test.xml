@@ -1,0 +1,90 @@
+<config>
+####cfRNA流程xml
+
+#####原始数据过滤-fastp#####
+<Task>
+#### Outdir代表的输出目录是中间文件结果目录,Project代表的项目类型,Sample_id代表样本名
+    <run_step>QC_MAP</run_step>
+    <Coding_file>{Outdir}/Task/shell_{Project}_01_{Sample_id}_QC.sh</Coding_file>
+    <Coding>
+        ln -sf {data_raw_R1} {Outdir}/{Project}/01.Data/{Sample_id}_R1.fq.gz
+        ln -sf {data_raw_R2} {Outdir}/{Project}/01.Data/{Sample_id}_R2.fq.gz
+        /home/chenzh/.conda/envs/cfRNA/bin/cutadapt --cores 4 -a AGATCGGAAGAG -A AGATCGGAAGAG -q 20 -m 16 -o {Outdir}/{Project}/01.Data/{Sample_id}_clean_R1.fq.gz -p {Outdir}/{Project}/01.Data/{Sample_id}_clean_R2.fq.gz {Outdir}/{Project}/01.Data/{Sample_id}_R1.fq.gz {Outdir}/{Project}/01.Data/{Sample_id}_R2.fq.gz
+    </Coding>
+</Task>
+
+#####质控-Fastqc以及summary#####
+<Task>
+    <run_step>QC_MAP</run_step>
+    <Coding_file>{Outdir}/Task/shell_{Project}_02_{Sample_id}_QC_summary.sh</Coding_file>
+    <Coding>
+    /home/chenzh/.conda/envs/cfRNA/bin/fastqc -o {Outdir}/{Project}/02.QC -t 2 {Outdir}/{Project}/01.Data/{Sample_id}_R1.fq.gz {Outdir}/{Project}/01.Data/{Sample_id}_R2.fq.gz
+    /home/chenzh/.conda/envs/cfRNA/bin/fastqc -o {Outdir}/{Project}/02.QC -t 2 {Outdir}/{Project}/01.Data/{Sample_id}_clean_R1.fq.gz {Outdir}/{Project}/01.Data/{Sample_id}_clean_R2.fq.gz
+    /home/chenzh/software/Raspberry-master/bin/raspberry {Outdir}/{Project}/01.Data/{Sample_id}_R1.fq.gz > {Outdir}/{Project}/02.QC/{Sample_id}_R1.stat
+    /home/chenzh/software/Raspberry-master/bin/raspberry {Outdir}/{Project}/01.Data/{Sample_id}_R2.fq.gz > {Outdir}/{Project}/02.QC/{Sample_id}_R2.stat
+    /home/chenzh/software/Raspberry-master/bin/raspberry {Outdir}/{Project}/01.Data/{Sample_id}_clean_R1.fq.gz > {Outdir}/{Project}/02.QC/{Sample_id}_clean_R1.stat
+    /home/chenzh/software/Raspberry-master/bin/raspberry {Outdir}/{Project}/01.Data/{Sample_id}_clean_R2.fq.gz > {Outdir}/{Project}/02.QC/{Sample_id}_clean_R2.stat
+    ~/.conda/envs/cfRNA/bin/python /home/chenzh/script/python/qc_summary.py {Outdir}/{Project}/02.QC/{Sample_id} {Outdir}/{Project}/02.QC/{Sample_id}_qc.txt
+    rm {Outdir}/{Project}/02.QC/{Sample_id}_R1.fq.gz.rlen
+    rm {Outdir}/{Project}/02.QC/{Sample_id}_R2.fq.gz.rlen
+    rm {Outdir}/{Project}/02.QC/{Sample_id}_clean_R1.fq.gz.rlen
+    rm {Outdir}/{Project}/02.QC/{Sample_id}_clean_R2.fq.gz.rlen
+    </Coding>
+    <Coding2>
+        /home/chenzh/.conda/envs/cfRNA/bin/multiqc {Outdir}/{Project}/02.QC -o {Outdir}/{Project}/02.QC
+    </Coding2>
+</Task>
+
+#####比对
+<Task>
+    <run_step>QC_MAP</run_step>
+    <Coding_file>{Outdir}/Task/shell_{Project}_03_{Sample_id}_MAP.sh</Coding_file>
+    <Coding>
+        /home/chenzh/.conda/envs/cfRNA/bin/STAR --genomeDir {Anno_dir}/{Speices}/ --readFilesIn {Outdir}/{Project}/01.Data/{Sample_id}_clean_R1.fq.gz {Outdir}/{Project}/01.Data/{Sample_id}_clean_R2.fq.gz --runThreadN 4 --outFileNamePrefix {Outdir}/{Project}/03.MAP/{Sample_id}_ --outSAMtype BAM Unsorted --readFilesCommand gzip -d -c --outFilterMultimapNmax 1 
+
+        wait
+
+        ln -sf {Outdir}/{Project}/03.MAP/{Sample_id}_Aligned.out.bam {Outdir}/{Project}/03.MAP/{Sample_id}.bam
+
+        samtools fixmate -m -c {Outdir}/{Project}/03.MAP/{Sample_id}.bam {Outdir}/{Project}/03.MAP/{Sample_id}.fix.bam
+        samtools sort --threads 6 {Outdir}/{Project}/03.MAP/{Sample_id}.fix.bam -o {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.bam
+        samtools markdup -r {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.bam {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.rdup.bam
+        samtools index {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.rdup.bam
+
+        rm {Outdir}/{Project}/03.MAP/{Sample_id}.bam {Outdir}/{Project}/03.MAP/{Sample_id}.fix.bam {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.bam
+        
+        samtools view {Outdir}/{Project}/03.MAP/{Sample_id}.fix.sort.rdup.bam |awk -F '\t' 'function abs(x){{return ((x > 0.0) ? -x : x)}}{{print $1"\t"abs($9)}}' | sort | uniq | cut -f2 > {Outdir}/{Project}/04.EXP/{Sample_id}_fragment.txt
+
+        <!-- xml中大于和小于用&gt;和 &lt;表示-->
+
+        Rscript ~/script/R/fragment_plot.R {Outdir}/{Project}/04.EXP/{Sample_id}_fragment.txt {Sample_id} {Outdir}/{Project}/04.EXP/
+        <!-- java -jar /home/chenzh/.conda/envs/cfRNA/bin/picard/picard.jar \
+            MarkDuplicates REMOVE_DUPLICATES=true \
+            ASSUME_SORT_ORDER=queryname \
+            I={Sample_id}.bam \
+            O={Sample_id}.rdup.bam \
+            M={output.metrics} \
+            READ_NAME_REGEX=null -->
+    </Coding>
+</Task>
+
+<Task>
+    <run_step>Count</run_step>
+    <Coding_file>{Outdir}/Task/shell_{Project}_04_All_sample_summary.sh</Coding_file>
+    <Coding>
+        ~/software/subread-2.0.2-Linux-x86_64/bin/featureCounts -p -T 2 -t gene -a {Anno_dir}/{Speices}/{Speices}.gtf -g gene_id -o {Outdir}/{Project}/04.EXP/All_sample_featurecount.txt {Outdir}/{Project}/03.MAP/*.fix.sort.rdup.bam
+        ~/.conda/envs/cfRNA/bin/python ~/script/python/feature_summary.py {Outdir}/{Project}/04.EXP/All_sample_featurecount.txt All_sample {Outdir}/{Project}/04.EXP/
+        Rscript ~/script/R/Cor_plot.R {Outdir}/{Project}/04.EXP/All_sample_FPKM.txt {Outdir}/{Project}/04.EXP/
+    </Coding>
+</Task>
+
+
+<Task>
+    <run_step>Diff</run_step>
+    <Coding_file>{Outdir}/Task/shell_{Project}_05_{Diff}.sh</Coding_file>
+    <Coding>    
+        Rscript ~/script/R/DEG_analysis.R {Judge} {Treat} {Treat_list} {Control} {Control_list} {Outdir}/{Project}/04.EXP/All_sample_count.txt {Outdir}/{Project}/05.Diff/
+        Rscript  ~/script/R/volcano_summary.R {Outdir}/{Project}/05.Diff/{Diff}_raw_{Judge}.xls {Diff} {Judge} {Outdir}/{Project}/05.Diff/
+    </Coding>
+</Task>
+</config>

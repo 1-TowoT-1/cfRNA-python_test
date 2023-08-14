@@ -1,0 +1,62 @@
+Project: cfRNA_test
+Project_id: article_result
+Speices: hg38_p13
+Outdir: /project/personal/chenzh/test/article_data_test/HCC_result/
+Anno_dir: /project/personal/chenzh/genome/
+method: pair
+
+Sample:
+  SRR10822565:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822565_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822565_2.fastq.gz
+  SRR10822567:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822567_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822567_2.fastq.gz
+  SRR10822574:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822574_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR10822574_2.fastq.gz
+  SRR14506725:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506725_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506725_2.fastq.gz
+  SRR14506729:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506729_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506729_2.fastq.gz
+  SRR14506731:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506731_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR14506731_2.fastq.gz
+  SRR5712520:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR5712520_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR5712520_2.fastq.gz
+  SRR5712523:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR5712523_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR5712523_2.fastq.gz
+  SRR8507737:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR8507737_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR8507737_2.fastq.gz
+  SRR8507743:
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR8507743_1.fastq.gz
+    - /project/personal/chenzh/test/article_data_test/HCC_data/SRR8507743_2.fastq.gz
+
+
+    
+
+Diff:
+   - liver_vs_health
+   - F_liver_cancer_vs_F_health
+   - M_liver_cancer_vs_M_health
+
+Group:
+  liver:
+   - F_liver
+   - M_liver
+  health:
+   - F_health
+   - M_health
+  F_liver_cancer:
+   - F_liver
+  M_liver_cancer:
+   - M_liver
+  F_health:
+   - F_health
+  M_health:
+   - M_health
